@@ -69,6 +69,25 @@ int dynarrNew(int *ref) {
   dynarr = dynarr + 2;
   return dynarr - ref;
 }
+//Makes a dynamic version of an array. Intended for strings
+//as an efficiency/convenience improvement.
+int dynarrNewString(int *arr,int len) {
+  int *dynarr = NULL;
+  int *dynarrP = NULL;
+  dynarr = new int[len + 3];
+  *dynarr = len+1;
+  *(dynarr+1) = len+1;
+  dynarr = dynarr + 2;
+  dynarrP = dynarr;
+  while (len > 0) {
+    *dynarr = *arr;
+    dynarr = dynarr + 1;
+    arr = arr + 1;
+    len = len - 1;
+  }
+  *dynarr = 0;
+  return dynarrP - arr;
+}
 int dynarrPush(int *dynarr, int elem) {
   int capacity = 0;
   int size = 0;
@@ -179,17 +198,135 @@ int skipGarbage(int *stdin) {
   return 0;
 }
 
+//Reads the LR1 machine into a hashtable
+int readMachine(int *stdin) {
+  int *machine = NULL;
+  int moves = 0;
+  int *line = NULL;
+  int *linea = NULL;
+  int t = 0;
+  moves = readInt(stdin);
+  machine = new int[moves+1];
+  *machine = moves;
+  while (moves > 0) {
+    line = readLine(stdin);
+    linea = new int[4];
+    //Unimplemented: TODO
+    //*linea = strReadInt(line);
+    t = dynarrDelete(line);
+    moves = moves - 1;
+  }
+  return machine - stdin;
+}
+
+int tokensPush(int *stdin,int *tokens,int *curType,int *curStr) {
+  int *ntokens = NULL;
+  int *tarr = NULL;
+  if (curType != NULL) {
+    if (curStr == NULL) {
+      *ntokens = error();
+    } else {}
+    tarr = new int[2];
+    *tarr = curType - tarr;
+    *(tarr+1) = curStr - tarr;
+    ntokens = dynarrPush(tokens,tarr-stdin) + tokens;
+  } else {}
+  return ntokens - tokens;
+}
+
 //Scanner
 int lex(int *stdin) {
-
+  int chr = 0;
+  int *tokens = NULL;
+  int *curStr = NULL;
+  int *curType = NULL;
+  int *tarr = NULL;
+  int matchingState = 0;
+  tokens = dynarrNew(stdin) + stdin;
+  chr = *stdin;
+  while (chr != 0) {
+    //state 0: match anything
+    //and figure out what to do with it
+    if (matchingState == 0) {
+      //Space
+      if (chr == 32) {
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //!
+      if (chr == 33) {
+        curType = NULL + 1;
+        curStr = NULL;
+      } else {}
+      //%
+      if (chr == 37) {
+        tarr = new int[3];
+        *tarr = 80;
+        *(tarr+1) = 67;
+        *(tarr+2) = 84;
+        curType = dynarrNewString(tarr,3) + tarr;
+        *tarr = 37;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //&
+      if (chr == 38) {
+        tarr = new int[3];
+        *tarr = 65;
+        *(tarr+1) = 77;
+        *(tarr+2) = 80;
+        curType = dynarrNewString(tarr,3) + tarr;
+        *tarr = 38;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //(
+      if (chr == 40) {
+        tarr = new int[6];
+        *tarr = 76;
+        *(tarr+1) = 80;
+        *(tarr+2) = 65;
+        *(tarr+3) = 82;
+        *(tarr+4) = 69;
+        *(tarr+5) = 78;
+        curType = dynarrNewString(tarr,6) + tarr;
+        *tarr = 40;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //)
+      if (chr == 41) {
+        tarr = new int[6];
+        *tarr = 82;
+        *(tarr+1) = 80;
+        *(tarr+2) = 65;
+        *(tarr+3) = 82;
+        *(tarr+4) = 69;
+        *(tarr+5) = 78;
+        curType = dynarrNewString(tarr,6) + tarr;
+        *tarr = 41;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+    } else {}
+    if (matchingState == 1) {
+    } else {}
+    matchingState = 0 - matchingState;
+    chr = *stdin;
+  }
+  return tokens - stdin;
 }
 
 int wain(int *stdin, int unused) {
   int *stdout = NULL;
   int *dynarr = NULL;
   int *tokens = NULL;
+  int *machine = NULL;
   stdout = stdin+2;
-  /* Body */
+  // Body
   //Skip terminals
   unused = skipGarbage(stdin);
   //Skip nonterminals
@@ -197,8 +334,14 @@ int wain(int *stdin, int unused) {
   //Skip start nonterminal
   tokens = readLine(stdin) + stdin;
   unused = dynarrDelete(tokens);
-
+  //Skip rules - we'll hardcode them
+  unused = skipGarbage(stdin);
+  //Skip number of states - Unneeded
+  unused = readInt(stdin);
+  //Read SLR1 machine
+  machine = readMachine(stdin) + stdin;
   tokens = lex(stdin) + stdin;
-  /* End */
+  // End
+  delete [] machine;
   return 0;
 }
