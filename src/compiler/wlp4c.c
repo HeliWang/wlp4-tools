@@ -73,7 +73,7 @@ int readInt(int *stdin) {
   int nextC = 0;
   nextC = *stdin;
   while (nextC != 10) {
-    if (nextC == 0) {
+    if (nextC == 0-1) {
       resl = error();
     } else {}
     nextC = nextC - 48;
@@ -219,7 +219,7 @@ int readLine(int *stdin) {
   dynarr = dynarrNew(stdin)+stdin;
   chr = *stdin;
   while (chr != 10) {
-    if (chr == 0) {
+    if (chr == 0-1) {
       chr = error();
     } else {}
     dynarr = dynarrPush(dynarr,chr) + dynarr;
@@ -290,7 +290,7 @@ int lex(int *stdin) {
   int advance = 1;
   tokens = dynarrNew(stdin) + stdin;
   chr = *stdin;
-  while (chr != 0) {
+  while (chr != 0-1) {
     //State 0: match anything
     //and figure out what to do with it
     if (matchingState == 0) {
