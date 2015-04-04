@@ -220,7 +220,7 @@ int readMachine(int *stdin) {
   return machine - stdin;
 }
 
-int tokensPush(int *stdin,int *tokens,int *curType,int *curStr) {
+int tokensPush(int *stdin,int *tokens,int *curStr,int *curType) {
   int *ntokens = NULL;
   int *tarr = NULL;
   if (curType != NULL) {
@@ -243,21 +243,15 @@ int lex(int *stdin) {
   int *curType = NULL;
   int *tarr = NULL;
   int matchingState = 0;
+  int lchr = 0;
+  int advance = 1;
   tokens = dynarrNew(stdin) + stdin;
   chr = *stdin;
   while (chr != 0) {
     //state 0: match anything
     //and figure out what to do with it
     if (matchingState == 0) {
-      //Space
-      if (chr == 32) {
-        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
-      } else {}
-      //!
-      if (chr == 33) {
-        curType = NULL + 1;
-        curStr = NULL;
-      } else {}
+      //Characters which are stand-alone tokens
       //%
       if (chr == 37) {
         tarr = new int[3];
@@ -312,13 +306,409 @@ int lex(int *stdin) {
         delete [] tarr;
         tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
       } else {}
+      //*
+      if (chr == 42) {
+        tarr = new int[5];
+        *tarr = 84;
+        *(tarr+1) = 73;
+        *(tarr+2) = 77;
+        *(tarr+3) = 69;
+        *(tarr+4) = 83;
+        curType = dynarrNewString(tarr,5) + tarr;
+        *tarr = 42;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //+
+      if (chr == 43) {
+        tarr = new int[4];
+        *tarr = 80;
+        *(tarr+1) = 76;
+        *(tarr+2) = 85;
+        *(tarr+3) = 83;
+        curType = dynarrNewString(tarr,4) + tarr;
+        *tarr = 43;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //,
+      if (chr == 44) {
+        tarr = new int[5];
+        *tarr = 67;
+        *(tarr+1) = 79;
+        *(tarr+2) = 77;
+        *(tarr+3) = 77;
+        *(tarr+4) = 65;
+        curType = dynarrNewString(tarr,5) + tarr;
+        *tarr = 44;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //-
+      if (chr == 45) {
+        tarr = new int[5];
+        *tarr = 77;
+        *(tarr+1) = 73;
+        *(tarr+2) = 78;
+        *(tarr+3) = 85;
+        *(tarr+4) = 83;
+        curType = dynarrNewString(tarr,5) + tarr;
+        *tarr = 45;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //;
+      if (chr == 59) {
+        tarr = new int[4];
+        *tarr = 83;
+        *(tarr+1) = 69;
+        *(tarr+2) = 77;
+        *(tarr+3) = 73;
+        curType = dynarrNewString(tarr,4) + tarr;
+        *tarr = 59;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //[
+      if (chr == 91) {
+        tarr = new int[6];
+        *tarr = 76;
+        *(tarr+1) = 66;
+        *(tarr+2) = 82;
+        *(tarr+3) = 65;
+        *(tarr+4) = 67;
+        *(tarr+5) = 75;
+        curType = dynarrNewString(tarr,6) + tarr;
+        *tarr = 91;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //]
+      if (chr == 93) {
+        tarr = new int[6];
+        *tarr = 82;
+        *(tarr+1) = 66;
+        *(tarr+2) = 82;
+        *(tarr+3) = 65;
+        *(tarr+4) = 67;
+        *(tarr+5) = 75;
+        curType = dynarrNewString(tarr,6) + tarr;
+        *tarr = 93;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //{
+      if (chr == 123) {
+        tarr = new int[6];
+        *tarr = 76;
+        *(tarr+1) = 66;
+        *(tarr+2) = 82;
+        *(tarr+3) = 65;
+        *(tarr+4) = 67;
+        *(tarr+5) = 69;
+        curType = dynarrNewString(tarr,6) + tarr;
+        *tarr = 123;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+      //}
+      if (chr == 125) {
+        tarr = new int[6];
+        *tarr = 82;
+        *(tarr+1) = 66;
+        *(tarr+2) = 82;
+        *(tarr+3) = 65;
+        *(tarr+4) = 67;
+        *(tarr+5) = 69;
+        curType = dynarrNewString(tarr,6) + tarr;
+        *tarr = 125;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+
+
+      //Characters which start medium-sized tokens
+      //!
+      if (chr == 33) {
+        lchr = 33;
+        matchingState = 0-1;
+      } else {}
+      //<
+      if (chr == 60) {
+        matchingState = 0-1;
+        lchr = 61;
+      } else {}
+      //=
+      if (chr == 61) {
+        matchingState = 0-1;
+        lchr = 61;
+      } else {}
+      //>
+      if (chr == 62) {
+        matchingState = 0-1;
+        lchr = 62;
+      } else {}
+
+      ///
+      if (chr == 47) {
+        matchingState = 0-2;
+      } else {}
+
+      //0
+      if (chr == 48) {
+        matchingState = 0-4;
+      } else {}
+
+      //1-9
+      if (chr < 58) {
+        if (chr > 48) {
+          matchingState = 0-5;
+          curStr = dynarrNew(stdin) + stdin;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+
+      //A-Z
+      if (chr > 64) {
+        if (chr < 91) {
+          matchingState = 0-6;
+          curStr = dynarrNew(stdin) + stdin;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+      //a-z
+      if (chr > 96) {
+        if (chr < 123) {
+          matchingState = 0-6;
+          curStr = dynarrNew(stdin) + stdin;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+
+      //Error on others: TODO
     } else {}
+    // State 1: Expect an = next
     if (matchingState == 1) {
+      matchingState = 0;
+      if (chr == 61) {
+        tarr = new int[2];
+        //!
+        if (lchr == 33) {
+          *tarr = 78;
+          *(tarr+1) = 69;
+        } else {}
+        //<
+        if (lchr == 60) {
+          *tarr = 76;
+          *(tarr+1) = 69;
+        } else {}
+        //=
+        if (lchr == 61) {
+          *tarr = 69;
+          *(tarr+1) = 81;
+        } else {}
+        //>
+        if (lchr == 62) {
+          *tarr = 71;
+          *(tarr+1) = 69;
+        } else {}
+        curType = dynarrNewString(tarr,2) + tarr;
+        *tarr = lchr;
+        *(tarr+1) = lchr;
+        curStr = dynarrNewString(tarr,2) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {
+        advance = 0;
+        //!
+        if (lchr == 33) {
+          lchr = error();
+        } else {}
+        //=
+        if (lchr == 61) {
+          tarr = new int[7];
+          *tarr = 66;
+          *(tarr+1) = 69;
+          *(tarr+2) = 67;
+          *(tarr+3) = 79;
+          *(tarr+4) = 77;
+          *(tarr+5) = 69;
+          *(tarr+6) = 83;
+          curType = dynarrNewString(tarr,7) + tarr;
+        } else {
+          tarr = new int[2];
+          //<
+          if (lchr == 60) {
+            *tarr = 76;
+            *(tarr+1) = 84;
+          } else {}
+          //>
+          if (lchr == 62) {
+            *tarr = 71;
+            *(tarr+1) = 84;
+          } else {}
+          curType = dynarrNewString(tarr,2) + tarr;
+        }
+        *tarr = lchr;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      }
+    } else {}
+    //State 2: Possible start of comment
+    if (matchingState == 2) {
+      if (chr == 47) {
+        matchingState = 0-3;
+      } else {
+        matchingState = 0;
+        advance = 0;
+        tarr = new int[5];
+        *tarr = 83;
+        *(tarr+1) = 76;
+        *(tarr+2) = 65;
+        *(tarr+3) = 83;
+        *(tarr+4) = 72;
+        curType = dynarrNewString(tarr,5) + tarr;
+        *tarr = 47;
+        curStr = dynarrNewString(tarr,1) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      }
+    } else {}
+    //State 3: line comment
+    if (matchingState == 3) {
+      if (chr == 10) {
+        matchingState = 0;
+      } else {}
+    } else {}
+    //State 4: Zero
+    if (matchingState == 4) {
+      if (chr > 47) {
+        if (chr < 58) {
+          chr = error();
+        } else {}
+      } else {}
+      if (chr > 64) {
+        if (chr < 91) {
+          lchr = error();
+        } else {}
+      } else {}
+      if (chr > 96) {
+        if (chr < 123) {
+          lchr = error();
+        } else {}
+      } else {}
+      matchingState = 0;
+      advance = 0;
+      tarr = new int[4];
+      *tarr = 90;
+      *(tarr+1) = 69;
+      *(tarr+2) = 82;
+      *(tarr+3) = 79;
+      curType = dynarrNewString(tarr,4) + tarr;
+      *tarr = 48;
+      curStr = dynarrNewString(tarr,1) + tarr;
+      delete [] tarr;
+      tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+    } else {}
+    //State 5: Number
+    if (matchingState == 5) {
+      lchr = 0;
+      if (chr > 47) {
+        if (chr < 58) {
+          lchr = 1;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+      if (chr > 64) {
+        if (chr < 91) {
+          lchr = error();
+        } else {}
+      } else {}
+      if (chr > 96) {
+        if (chr < 123) {
+          lchr = error();
+        } else {}
+      } else {}
+      if (lchr == 0) {
+        matchingState = 0;
+        advance = 0;
+        tarr = new int[3];
+        *tarr = 78;
+        *(tarr+1) = 85;
+        *(tarr+2) = 77;
+        curType = dynarrNewString(tarr,3) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
+    } else {}
+    if (matchingState == 6) {
+      lchr = 0;
+      if (chr > 47) {
+        if (chr < 58) {
+          lchr = 1;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+      if (chr > 64) {
+        if (chr < 91) {
+          lchr = 1;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+      if (chr > 96) {
+        if (chr < 123) {
+          lchr = 1;
+          curStr = dynarrPush(curStr,chr) + curStr;
+        } else {}
+      } else {}
+      if (lchr == 0) {
+        matchingState = 0;
+        advance = 0;
+        tarr = new int[2];
+        *tarr = 73;
+        *(tarr+1) = 68;
+        curType = dynarrNewString(tarr,2) + tarr;
+        delete [] tarr;
+        tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
+      } else {}
     } else {}
     matchingState = 0 - matchingState;
-    chr = *stdin;
+    if (advance == 1) {
+      chr = *stdin;
+    } else {
+      advance = 1;
+    }
   }
   return tokens - stdin;
+}
+
+int printTokens(int *stdin,int *stdout,int *tokens) {
+  int cnt = 0;
+  int size = 0;
+  int t = 0;
+  int *tarr = NULL;
+  int *dynarr = NULL;
+  size = dynarrSize(tokens);
+  while (cnt < size) {
+    tarr = *tokens + stdin;
+    dynarr = *tarr + tarr;
+    t = print(stdout,dynarr);
+    *stdout = 32;
+    dynarr = *(tarr+1) + tarr;
+    t = printline(stdout,dynarr);
+    cnt = cnt + 1;
+  }
+  return 0;
 }
 
 int wain(int *stdin, int unused) {
@@ -329,19 +719,20 @@ int wain(int *stdin, int unused) {
   stdout = stdin+2;
   // Body
   //Skip terminals
-  unused = skipGarbage(stdin);
+  //unused = skipGarbage(stdin);
   //Skip nonterminals
-  unused = skipGarbage(stdin);
+  //unused = skipGarbage(stdin);
   //Skip start nonterminal
-  tokens = readLine(stdin) + stdin;
-  unused = dynarrDelete(tokens);
+  //tokens = readLine(stdin) + stdin;
+  //unused = dynarrDelete(tokens);
   //Skip rules - we'll hardcode them
-  unused = skipGarbage(stdin);
+  //unused = skipGarbage(stdin);
   //Skip number of states - Unneeded
-  unused = readInt(stdin);
+  //unused = readInt(stdin);
   //Read SLR1 machine
-  machine = readMachine(stdin) + stdin;
+  //machine = readMachine(stdin) + stdin;
   tokens = lex(stdin) + stdin;
+  unused = printTokens(stdin,stdout,tokens);
   // End
   delete [] machine;
   return 0;
