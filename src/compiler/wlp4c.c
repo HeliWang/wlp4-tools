@@ -24,6 +24,47 @@ int error() {
   return *nil;
 }
 
+//String functions
+int strcmp(int *a,int *b) {
+  int diff = 1;
+  int cond = 0;
+  while (cond == 0) {
+    if (*a != *b) {
+      cond = 1;
+    } else {}
+    if (*a == 0) {
+      cond = 1;
+    } else {}
+    if (*b == 0) {
+      cond = 1;
+    } else {}
+    if (cond == 0) {
+      diff = diff + 1;
+      a = a + 1;
+      b = b + 1;
+    } else {}
+  }
+  if (*a == 0) {
+    if (*b == 0) {
+      diff = 0;
+    } else {}
+  } else {}
+  return diff;
+}
+
+//Destructive!
+int toupper(int *a) {
+  while (*a != 0) {
+    if (*a > 96) {
+      if (*a < 123) {
+        *a = *a - 32;
+      } else {}
+    } else {}
+    a = a + 1;
+  }
+  return 0;
+}
+
 //Reads an int from standard input
 //Assumes the int is the only thing on the line
 //Intended to be used with the .lr file format
@@ -74,6 +115,8 @@ int dynarrNew(int *ref) {
 int dynarrNewString(int *arr,int len) {
   int *dynarr = NULL;
   int *dynarrP = NULL;
+  int *oarr = NULL;
+  oarr = arr;
   dynarr = new int[len + 3];
   *dynarr = len+1;
   *(dynarr+1) = len+1;
@@ -86,7 +129,7 @@ int dynarrNewString(int *arr,int len) {
     len = len - 1;
   }
   *dynarr = 0;
-  return dynarrP - arr;
+  return dynarrP - oarr;
 }
 int dynarrPush(int *dynarr, int elem) {
   int capacity = 0;
@@ -248,7 +291,7 @@ int lex(int *stdin) {
   tokens = dynarrNew(stdin) + stdin;
   chr = *stdin;
   while (chr != 0) {
-    //state 0: match anything
+    //State 0: match anything
     //and figure out what to do with it
     if (matchingState == 0) {
       //Characters which are stand-alone tokens
@@ -646,6 +689,7 @@ int lex(int *stdin) {
         *tarr = 78;
         *(tarr+1) = 85;
         *(tarr+2) = 77;
+        curStr = dynarrPush(curStr,0) + curStr;
         curType = dynarrNewString(tarr,3) + tarr;
         delete [] tarr;
         tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
@@ -674,15 +718,114 @@ int lex(int *stdin) {
       if (lchr == 0) {
         matchingState = 0;
         advance = 0;
-        tarr = new int[2];
-        *tarr = 73;
-        *(tarr+1) = 68;
-        curType = dynarrNewString(tarr,2) + tarr;
+        curStr = dynarrPush(curStr,0) + curStr;
+        tarr = new int[8];
+        //Determine if the type is ID or a special type
+        curType = NULL;
+
+        //int
+        *tarr = 105;
+        *(tarr+1) = 110;
+        *(tarr+2) = 116;
+        *(tarr+3) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,3) + tarr;
+        } else {}
+
+        //wain
+        *tarr = 119;
+        *(tarr+1) = 97;
+        *(tarr+2) = 105;
+        *(tarr+3) = 110;
+        *(tarr+4) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,4) + tarr;
+        } else {}
+
+        //NULL
+        *tarr = 78;
+        *(tarr+1) = 85;
+        *(tarr+2) = 76;
+        *(tarr+3) = 76;
+        *(tarr+4) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          curType = dynarrNewString(tarr,4) + tarr;
+        } else {}
+
+        //if
+        *tarr = 105;
+        *(tarr+1) = 102;
+        *(tarr+2) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,2) + tarr;
+        } else {}
+
+        //else
+        *tarr = 101;
+        *(tarr+1) = 108;
+        *(tarr+2) = 115;
+        *(tarr+3) = 101;
+        *(tarr+4) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,4) + tarr;
+        } else {}
+
+        //while
+        *tarr = 119;
+        *(tarr+1) = 104;
+        *(tarr+2) = 105;
+        *(tarr+3) = 108;
+        *(tarr+4) = 101;
+        *(tarr+5) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,5) + tarr;
+        } else {}
+
+        //return
+        *tarr = 114;
+        *(tarr+1) = 101;
+        *(tarr+2) = 116;
+        *(tarr+3) = 117;
+        *(tarr+4) = 114;
+        *(tarr+5) = 110;
+        *(tarr+6) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,6) + tarr;
+        } else {}
+
+        //println
+        *tarr = 112;
+        *(tarr+1) = 114;
+        *(tarr+2) = 105;
+        *(tarr+3) = 110;
+        *(tarr+4) = 116;
+        *(tarr+5) = 108;
+        *(tarr+6) = 110;
+        *(tarr+7) = 0;
+        if (strcmp(curStr,tarr) == 0) {
+          lchr = toupper(tarr);
+          curType = dynarrNewString(tarr,7) + tarr;
+        } else {}
+
+        if (curType == NULL) {
+          *tarr = 73;
+          *(tarr+1) = 68;
+          curType = dynarrNewString(tarr,2) + tarr;
+        } else {}
+
         delete [] tarr;
         tokens = tokensPush(stdin,tokens,curStr,curType) + tokens;
       } else {}
     } else {}
-    matchingState = 0 - matchingState;
+    if (matchingState < 0) {
+      matchingState = 0 - matchingState;
+    } else {}
     if (advance == 1) {
       chr = *stdin;
     } else {
@@ -707,6 +850,7 @@ int printTokens(int *stdin,int *stdout,int *tokens) {
     dynarr = *(tarr+1) + tarr;
     t = printline(stdout,dynarr);
     cnt = cnt + 1;
+    tokens = tokens + 1;
   }
   return 0;
 }
