@@ -137,10 +137,11 @@ int treeDelete(int *tree) {
   int children = 0;
   int numChildren = 0;
   int *dynarr = NULL;
-  dynarr = *(tree+1)+tree;
+  int t = 0;
+  dynarr = *(tree+1) + tree;
   numChildren = *(dynarr-2);
   while (children < numChildren) {
-    treeDelete(*(dynarr+children)+tree);
+    t = treeDelete(*(dynarr+children)+tree);
     children = children + 1;
   }
   numChildren = dynarrDelete(*tree + tree);
@@ -151,7 +152,7 @@ int treeDelete(int *tree) {
 int treeAddChild(int *tree,int *child) {
   int *dynarr = NULL;
   dynarr = *(tree+1) + tree;
-  dynarr = dynarrPush(dynarr,child - tree);
+  dynarr = dynarrPush(dynarr,child - tree) + dynarr;
   *(tree+1) = dynarr - tree;
   return 0;
 }
@@ -170,7 +171,7 @@ int treeGetNode(int *tree) {
 //Reads a line from standard input
 //Returns it stored in a dynamic array
 int readLine(int *stdin) {
-  int dynarr = NULL;
+  int *dynarr = NULL;
   int chr = 0;
   dynarr = dynarrNew(stdin)+stdin;
   chr = *stdin;
@@ -209,7 +210,7 @@ int readMachine(int *stdin) {
   machine = new int[moves+1];
   *machine = moves;
   while (moves > 0) {
-    line = readLine(stdin);
+    line = readLine(stdin) + stdin;
     linea = new int[4];
     //Unimplemented: TODO
     //*linea = strReadInt(line);
