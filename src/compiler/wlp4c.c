@@ -294,9 +294,12 @@ int lex(int *stdin) {
     //State 0: match anything
     //and figure out what to do with it
     if (matchingState == 0) {
+      lchr = 0;
+
       //Characters which are stand-alone tokens
       //%
       if (chr == 37) {
+        lchr = 1;
         tarr = new int[3];
         *tarr = 80;
         *(tarr+1) = 67;
@@ -309,6 +312,7 @@ int lex(int *stdin) {
       } else {}
       //&
       if (chr == 38) {
+        lchr = 1;
         tarr = new int[3];
         *tarr = 65;
         *(tarr+1) = 77;
@@ -321,6 +325,7 @@ int lex(int *stdin) {
       } else {}
       //(
       if (chr == 40) {
+        lchr = 1;
         tarr = new int[6];
         *tarr = 76;
         *(tarr+1) = 80;
@@ -336,6 +341,7 @@ int lex(int *stdin) {
       } else {}
       //)
       if (chr == 41) {
+        lchr = 1;
         tarr = new int[6];
         *tarr = 82;
         *(tarr+1) = 80;
@@ -351,6 +357,7 @@ int lex(int *stdin) {
       } else {}
       //*
       if (chr == 42) {
+        lchr = 1;
         tarr = new int[5];
         *tarr = 84;
         *(tarr+1) = 73;
@@ -365,6 +372,7 @@ int lex(int *stdin) {
       } else {}
       //+
       if (chr == 43) {
+        lchr = 1;
         tarr = new int[4];
         *tarr = 80;
         *(tarr+1) = 76;
@@ -378,6 +386,7 @@ int lex(int *stdin) {
       } else {}
       //,
       if (chr == 44) {
+        lchr = 1;
         tarr = new int[5];
         *tarr = 67;
         *(tarr+1) = 79;
@@ -392,6 +401,7 @@ int lex(int *stdin) {
       } else {}
       //-
       if (chr == 45) {
+        lchr = 1;
         tarr = new int[5];
         *tarr = 77;
         *(tarr+1) = 73;
@@ -406,6 +416,7 @@ int lex(int *stdin) {
       } else {}
       //;
       if (chr == 59) {
+        lchr = 1;
         tarr = new int[4];
         *tarr = 83;
         *(tarr+1) = 69;
@@ -419,6 +430,7 @@ int lex(int *stdin) {
       } else {}
       //[
       if (chr == 91) {
+        lchr = 1;
         tarr = new int[6];
         *tarr = 76;
         *(tarr+1) = 66;
@@ -434,6 +446,7 @@ int lex(int *stdin) {
       } else {}
       //]
       if (chr == 93) {
+        lchr = 1;
         tarr = new int[6];
         *tarr = 82;
         *(tarr+1) = 66;
@@ -449,6 +462,7 @@ int lex(int *stdin) {
       } else {}
       //{
       if (chr == 123) {
+        lchr = 1;
         tarr = new int[6];
         *tarr = 76;
         *(tarr+1) = 66;
@@ -464,6 +478,7 @@ int lex(int *stdin) {
       } else {}
       //}
       if (chr == 125) {
+        lchr = 1;
         tarr = new int[6];
         *tarr = 82;
         *(tarr+1) = 66;
@@ -487,33 +502,36 @@ int lex(int *stdin) {
       } else {}
       //<
       if (chr == 60) {
-        matchingState = 0-1;
         lchr = 61;
+        matchingState = 0-1;
       } else {}
       //=
       if (chr == 61) {
-        matchingState = 0-1;
         lchr = 61;
+        matchingState = 0-1;
       } else {}
       //>
       if (chr == 62) {
-        matchingState = 0-1;
         lchr = 62;
+        matchingState = 0-1;
       } else {}
 
       ///
       if (chr == 47) {
+        lchr = 1;
         matchingState = 0-2;
       } else {}
 
       //0
       if (chr == 48) {
+        lchr = 1;
         matchingState = 0-4;
       } else {}
 
       //1-9
       if (chr < 58) {
         if (chr > 48) {
+          lchr = 1;
           matchingState = 0-5;
           curStr = dynarrNew(stdin) + stdin;
           curStr = dynarrPush(curStr,chr) + curStr;
@@ -523,6 +541,7 @@ int lex(int *stdin) {
       //A-Z
       if (chr > 64) {
         if (chr < 91) {
+          lchr = 1;
           matchingState = 0-6;
           curStr = dynarrNew(stdin) + stdin;
           curStr = dynarrPush(curStr,chr) + curStr;
@@ -531,13 +550,17 @@ int lex(int *stdin) {
       //a-z
       if (chr > 96) {
         if (chr < 123) {
+          lchr = 1;
           matchingState = 0-6;
           curStr = dynarrNew(stdin) + stdin;
           curStr = dynarrPush(curStr,chr) + curStr;
         } else {}
       } else {}
 
-      //Error on others: TODO
+      //Error on others
+      if (lchr == 0) {
+        lchr = error();
+      } else {}
     } else {}
     // State 1: Expect an = next
     if (matchingState == 1) {
