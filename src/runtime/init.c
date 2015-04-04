@@ -22,6 +22,10 @@ static uint32_t check_div4(uint32_t in,uint32_t *memory) {
   return in/4;
 }
 
+static uint32_t swap_endian(uint32_t in) {
+  return ((in >> 24) & 0xFF) | ((in >> 8) & 0xFF00) | ((in << 8) & 0xFF0000) | ((in << 24) & 0xFF000000);
+}
+
 static void mips_relocate(FILE *infile,uint32_t *memory,uint32_t offset,uint32_t tablelen) {
   uint32_t word;
   uint32_t i;
@@ -32,6 +36,7 @@ static void mips_relocate(FILE *infile,uint32_t *memory,uint32_t offset,uint32_t
       fprintf(stderr,"Critical Error: Unexpected end of MERL file before finishing relocation table segment. Perhaps your first line should not be .word 0x10000002 (beq $0, $0, 2)?\n");
       goto error;
     }
+    word = swap_endian(word);
     /* Skip ESR/ESD letters */
     if (skip) {
       skip--;
@@ -44,6 +49,7 @@ static void mips_relocate(FILE *infile,uint32_t *memory,uint32_t offset,uint32_t
     case 0x01: /* REL */
       word = check_div4(word,memory);
       memory[word+offset] = memory[word+offset] + offset*4 - 0xc; /* Subtract 12 since we didn't load the header into the actual code */
+      code = 0;
       break;
     case 0x11: /* ESR */
       fprintf(stderr,"Warning: ESR entry found in MERL file. This file is likely not completely linked and may not behave correctly.\n");
@@ -53,9 +59,10 @@ static void mips_relocate(FILE *infile,uint32_t *memory,uint32_t offset,uint32_t
       break;
     case 0xDEADBEEF: /* Followup to ESR/ESD. Read length and skip that many bytes. */
       skip = word;
+      code = 0;
       break;
     default:
-      fprintf(stderr,"Critical Error: Unrecognized relocation table entry.\n");
+      fprintf(stderr,"Critical Error: Unrecognized relocation table entry 0x%x.\n",code);
       goto error;
     }
   }
@@ -65,10 +72,6 @@ static void mips_relocate(FILE *infile,uint32_t *memory,uint32_t offset,uint32_t
 error:
   free(memory);
   exit(MIPS_EXITCODE);
-}
-
-static uint32_t swap_endian(uint32_t in) {
-  return ((in >> 24) & 0xFF) | ((in >> 8) & 0xFF00) | ((in << 8) & 0xFF0000) | ((in << 24) & 0xFF000000);
 }
 
 static uint32_t mips_load_code(FILE *infile,uint32_t *memory,uint32_t offset) {
@@ -94,7 +97,7 @@ static uint32_t mips_load_code(FILE *infile,uint32_t *memory,uint32_t offset) {
       }
       memory[i] = swap_endian(word);
     }
-    mips_relocate(infile,memory,offset,lens[0]-lens[1]);
+    mips_relocate(infile,memory,offset,(lens[0]-lens[1]) >> 2);
   } else if (offset != 0) {
     fprintf(stderr,"Critical Error: Nonzero offset for non-relocatable code.\n");
     goto error;

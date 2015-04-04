@@ -68,10 +68,10 @@ void mips_run(struct rte runtime) {
   uint32_t lastpc = 0;
   while (1) {
     runtime.registers[0] = 0; /* Ensure that $0 is always 0 */
+    if (runtime.pc >= runtime.codeend && runtime.safemode) {
     if (runtime.pc == MIPS_RETURNADDR) {
       break;
     }
-    if (runtime.pc >= runtime.codeend && runtime.safemode) {
       mips_error("Runtime Error: PC got past end of program code.\n",&runtime);
     }
     /* See MIPS reference sheet for a full description of each command */
@@ -176,8 +176,11 @@ void mips_run(struct rte runtime) {
         break;
       case MIPS_JALR:
         mips_assert(t == 0 && d == 0,&runtime);
-        runtime.registers[31] = runtime.pc;
-        runtime.pc = runtime.registers[s];
+        {
+          int tmp = runtime.registers[s];
+          runtime.registers[31] = runtime.pc;
+          runtime.pc = tmp;
+        }
         break;
       case MIPS_LIS:
         mips_assert(s == 0 && t == 0,&runtime);
