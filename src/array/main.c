@@ -41,12 +41,12 @@ int main(int argc, const char **argv) {
     fprintf(stderr,"Expected an integer argument for number of elements.\n");
     goto error;
   }
-  if (runtime.registers[2]>100000) {
-    fprintf(stderr,"Provided array size is too large.\n");
-    goto error;
-  }
-  offset = MIPS_MEMSIZE/sizeof(uint32_t) - runtime.registers[2];
+  offset = runtime.codeend;
   for (i=0;i<runtime.registers[2];i++) {
+    if (offset+i >= MIPS_MEMSIZE) {
+      fprintf(stderr,"No memory for further array elements!\n");
+      goto error;
+    }
     fprintf(stderr,"Enter array element %d: ",i);
     if (!scanf(" %d",&runtime.memory[offset+i])) {
       fprintf(stderr,"Expected an integer argument for register 2.\n");
@@ -55,7 +55,7 @@ int main(int argc, const char **argv) {
   }
   offset *= 4;
   runtime.registers[1]  = offset;
-  runtime.registers[30] = offset;
+  runtime.registers[30] = MIPS_MEMSIZE;
   runtime.safemode = safety;
   mips_run(runtime);
   return 0;
