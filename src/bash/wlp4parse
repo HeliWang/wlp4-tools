@@ -1,0 +1,186 @@
+#!/bin/bash
+
+###########################################################
+#                                                         #
+# wlp4parse - A wlp4 parser                               #
+# Input - a .scanned file                                 #
+# Output - A .wlp4i file containing the parse tree.       #
+#                                                         #
+# Copyright Sean Harrap (April 1, 2015)                   #
+#                                                         #
+###########################################################
+
+if [ $# -ne 1 ]; then
+  echo 'Usage: wlp4parse <input-file.scanned>' >&2
+  exit 1
+fi
+
+error() {
+  echo "ERROR: $@" >&2
+  exit 1
+}
+
+stack-top() {
+  read -a array <<< $states
+  result="${array[0]}"
+}
+
+if ! [ -e "wlp4.lr" ]; then
+  error 'Could not find WLP4 grammar in wlp4.lr'
+fi
+target="$PWD/${1%scanned}wlp4i"
+if [ -e "$target" ]; then
+  rm "$target"
+fi
+touch "$target"
+
+grammar=".grammar"
+machine=".machine"
+
+if [ -e "$grammar" ]; then
+  rm "$grammar"
+fi
+if [ -e "$machine" ]; then
+  rm "$machine"
+fi
+touch "$grammar"
+touch "$machine"
+
+count=0
+countcount=0
+rules=0
+while read line; do
+  if [ "$count" -eq 0 ]; then
+    if grep -E "^[0135]$" <<< "$countcount" > /dev/null 2> /dev/null; then
+      count=$line
+      countcount=$((countcount+1))
+    elif [ "$countcount" -eq 2 ]; then
+      countcount=3
+      rules=1
+    elif [ "$countcount" -eq 4 ]; then
+      countcount=5
+      rules=2
+    fi
+  else
+    count=$((count-1))
+    if [ "$rules" -eq 1 ]; then
+      echo "$line" >> "$grammar"
+    elif [ "$rules" -eq 2 ]; then
+      echo "$line" >> "$machine"
+    fi
+  fi
+done < wlp4.lr
+
+states="0"
+tokens=""
+tokencnt=0
+#Parse the input
+
+lrparse() {
+  tmpfile=".tmpscanned"
+  echo "BOF BOF" > "$tmpfile"
+  cat "../$1" >> "$tmpfile"
+  echo "EOF EOF" >> "$tmpfile"
+  while read line; do
+    read -a array <<< "$line"
+    word="${array[0]}"
+    token="${array[1]}"
+    while true; do
+      #get the LR rule
+      stack-top
+      nresult=$(grep -E "^$result $word" ../$machine)
+      if [ $? -ne 0 ]; then
+        error "Could not find action for state $result and token $word"
+      fi
+      read -a array <<< "$nresult"
+      action="${array[2]}"
+      result="${array[3]}"
+      if [ "$action" = "shift" ]; then
+        if [ "$word" = "EOF" ]; then
+          tokens="$tokencnt $tokens"
+          mkdir $tokencnt
+          echo "EOF EOF" > $tokencnt/node
+          count=$(wc -w <<< $tokens)
+          count=$((count-1))
+          if [ -e tree ]; then
+            rm -r tree
+          fi
+          mkdir tree
+          rm "$tmpfile"
+          for file in $tokens; do
+            mv $file tree/$count
+            count=$((count-1))
+          done
+          echo "start BOF procedures EOF" > tree/node
+          mv tree/* .
+          rmdir tree
+          return 0
+        fi
+        break
+      fi
+      result=$((result+1))
+      rule=$(tail -n+${result} "../$grammar" | head -n1)
+      popcnt=$(wc -w <<< "$rule")
+      popcnt=$((popcnt-1))
+      read -a array <<< "$rule"
+      lhs="${array[0]}"
+      read -a array <<< "$states"
+      states="${array[@]:$popcnt}"
+      stack-top
+      nresult=$(grep -E "^$result $lhs" ../$machine)
+      if [ $? -ne 0 ]; then
+        error "Could not find action for state $result and token $lhs"
+      fi
+      read -a array <<< "$nresult"
+      action="${array[2]}"
+      result="${array[3]}"
+      if [ "$action" != "shift" ]; then
+        error "Told not to shift nonterminal?"
+      fi
+      read -a array <<< "$tokens"
+      count=$((popcnt-1))
+      tokens="${array[@]:$popcnt}"
+      mkdir .tmp
+      echo "$rule" > .tmp/node
+      for file in ${array[@]:0:$popcnt}; do
+        mv $file .tmp/$count
+        count=$((count-1))
+      done
+      tokencnt=$((tokencnt-popcnt))
+      mv .tmp $tokencnt
+      tokens="$tokencnt $tokens"
+      states="$result $states"
+      tokencnt=$((tokencnt+1))
+    done
+    mkdir $tokencnt
+    echo "$word $token" > "$tokencnt/node"
+    tokens="$tokencnt $tokens"
+    states="$result $states"
+    tokencnt=$((tokencnt+1))
+  done < "$tmpfile"
+  rm "$tmpfile"
+  error "Parsing finished with input remaining"
+}
+
+preorder-traversal() {
+  cd $1
+  cat node >> "$target"
+  for file in *; do
+    if [ -d "$file" ]; then
+      preorder-traversal "$file"
+    fi
+  done
+  cd ..
+}
+
+if [ -e tree ]; then
+  rm -r tree
+fi
+mkdir tree
+cd tree
+lrparse $1
+cd ..
+preorder-traversal tree
+
+rm "$grammar"
+rm "$machine"

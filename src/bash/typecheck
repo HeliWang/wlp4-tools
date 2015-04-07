@@ -1,0 +1,445 @@
+#!/bin/bash
+
+error() {
+  echo "ERROR:" "$1" >&2
+  exit 1
+}
+
+symTableLookup() {
+  reslType=$(grep "^$1 $2" "$symTbl")
+  if [ $? -ne 0 ]; then
+    reslType="notfound"
+  fi
+}
+
+procTableLookup() {
+  reslProc=$(grep "^$1" "$procTbl")
+  if [ $? -ne 0 ]; then
+    reslProc="notfound"
+  fi
+}
+
+typeCheck() {
+  cd $1
+  read rule < node
+  case $rule in
+  "start BOF procedures EOF")
+    typeCheck 1
+    ;;
+  "procedures procedure procedures")
+    typeCheck 0
+    typeCheck 1
+    ;;
+  "procedures main")
+    typeCheck 0
+    ;;
+  "procedure INT ID LPAREN params RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE")
+    symTbl="$PWD/.symbolTable"
+    if [ -e "$symTbl" ]; then
+      rm "$symTbl"
+    fi
+    touch "$symTbl"
+    read -a array < 1/node
+    curProc="${array[1]}"
+    name="PROC$curProc"
+    procTableLookup $name
+    if [ "$name" != "notfound" ]; then
+      error "Multiple declarations of a procedure found."
+    fi
+    params=""
+    typeCheck 3
+    echo "$name$params" >> "$procTbl"
+    typeCheck 6
+    typeCheck 7
+    typeCheck 9
+    ty=$(cat 9/ty)
+    if ! [ "$ty" = "int" ]; then
+      error "Procedure must return an int"
+    fi
+    ;;
+  "main INT WAIN LPAREN dcl COMMA dcl RPAREN LBRACE dcls statements RETURN expr SEMI RBRACE")
+    symTbl="$PWD/.symbolTable"
+    if [ -e "$symTbl" ]; then
+      rm "$symTbl"
+    fi
+    touch "$symTbl"
+    curProc="wain"
+    typeCheck 3
+    typeCheck 5
+    ty=$(cat 5/ty)
+    if [ "$ty" != "int" ]; then
+      error "Wain must accept an int as its second argument."
+    fi
+    typeCheck 8
+    typeCheck 9
+    typeCheck 11
+    ty=$(cat 11/ty)
+    if ! [ "$ty" = "int" ]; then
+      error "Wain must return an int"
+    fi
+    ;;
+  "params")
+    ;;
+  "params paramlist")
+    typeCheck 0
+    ;;
+  "paramlist dcl")
+    typeCheck 0
+    ty=$(cat 0/ty)
+    params="$params $ty"
+    ;;
+  "paramlist dcl COMMA paramlist")
+    typeCheck 0
+    ty=$(cat 0/ty)
+    params="$params $ty"
+    typeCheck 2
+    ;;
+  "type INT")
+    echo "int" > ty
+    ;;
+  "type INT STAR")
+    echo "intp" > ty
+    ;;
+  "dcls")
+    ;;
+  "dcls dcls dcl BECOMES NUM SEMI")
+    typeCheck 0
+    typeCheck 1
+    ty=$(cat 1/ty)
+    if ! [ "$ty" = "int" ]; then
+      error "Left and right hand sides of variable declaration differ: $ty"
+    fi
+    cp 1/ty ty
+    ;;
+  "dcls dcls dcl BECOMES NULL SEMI")
+    typeCheck 0
+    typeCheck 1
+    ty=$(cat 1/ty)
+    if ! [ "$ty" = "intp" ]; then
+      error "Left and right hand sides of variable declaration differ"
+    fi
+    cp 1/ty ty
+    ;;
+  "dcl type ID")
+    typeCheck 0
+    read -a array < 1/node
+    name="${array[1]}"
+    symTableLookup "$curProc" "$name"
+    if [ "$reslType" != "notfound" ]; then
+      error "Duplicate definition of variable in procedure $curProc with name $name"
+    fi
+    ty=$(cat 0/ty)
+    echo "$curProc $name $ty" >> "$symTbl"
+    cp 0/ty ty
+    ;;
+  "statements")
+    ;;
+  "statements statements statement")
+    typeCheck 0
+    typeCheck 1
+    ;;
+  "statement lvalue BECOMES expr SEMI")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of assignment differ"
+    fi
+    ;;
+  "statement IF LPAREN test RPAREN LBRACE statements RBRACE ELSE LBRACE statements RBRACE")
+    typeCheck 2
+    ty=$(cat 2/ty)
+    if ! [ "$ty" = "bool" ]; then
+      error "Conditional for if statement must be a boolean."
+    fi
+    typeCheck 5
+    typeCheck 9
+    ;;
+  "statement WHILE LPAREN test RPAREN LBRACE statements RBRACE")
+    typeCheck 2
+    ty=$(cat 2/ty)
+    if ! [ "$ty" = "bool" ]; then
+      error "Conditional for while statement must be a boolean."
+    fi
+    typeCheck 5
+    ;;
+  "statement PRINTLN LPAREN expr RPAREN SEMI")
+    typeCheck 2
+    ty=$(cat 2/ty)
+    if ! [ "$ty" = "int" ]; then
+      error "Argument to println must be an integer."
+    fi
+    ;;
+  "statement DELETE LBRACK RBRACK expr SEMI")
+    typeCheck 3
+    ty=$(cat 3/ty)
+    if ! [ "$ty" = "intp" ]; then
+      error "Argument to delete must be a pointer."
+    fi
+    ;;
+  "test expr EQ expr")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of expression differ."
+    fi
+    echo "bool" > ty
+    ;;
+  "test expr NE expr")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of expression differ."
+    fi
+    echo "bool" > ty
+    ;;
+  "test expr LE expr")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of expression differ."
+    fi
+    echo "bool" > ty
+    ;;
+  "test expr LT expr")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of expression differ."
+    fi
+    echo "bool" > ty
+    ;;
+  "test expr GE expr")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of expression differ."
+    fi
+    echo "bool" > ty
+    ;;
+  "test expr GT expr")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if ! [ "$ty1" = "$ty2" ]; then
+      error "Left and right hand sides of expression differ."
+    fi
+    echo "bool" > ty
+    ;;
+  "expr term")
+    typeCheck 0
+    cp 0/ty ty
+    ;;
+  "expr expr PLUS term")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if [ "$ty1" = "intp" ]; then
+      if [ "$ty2" = "intp" ]; then
+        error "Cannot add two pointers."
+      fi
+      echo "intp" > ty
+    else
+      if [ "$ty2" = "intp" ]; then
+        echo "intp" > ty
+      else
+        echo "int" > ty
+      fi
+    fi
+    ;;
+  "expr expr MINUS term")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if [ "$ty1" = "$ty2" ]; then
+      echo "int" > ty
+    elif [ "$ty1" = "intp" ]; then
+      echo "intp" > ty
+    else
+      error "Left and right hand side of subtraction differ."
+    fi
+    ;;
+  "term factor")
+    typeCheck 0
+    cp 0/ty ty
+    ;;
+  "term term STAR factor")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if [ "$ty1" != "int" ] || [ "$ty2" != "int" ]; then
+      error "This operator cannot operate on pointers."
+    fi
+    echo "int" > ty
+    ;;
+  "term term SLASH factor")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if [ "$ty1" != "int" ] || [ "$ty2" != "int" ]; then
+      error "This operator cannot operate on pointers."
+    fi
+    echo "int" > ty
+    ;;
+  "term term PCT factor")
+    typeCheck 0
+    typeCheck 2
+    ty1=$(cat 0/ty)
+    ty2=$(cat 2/ty)
+    if [ "$ty1" != "int" ] || [ "$ty2" != "int" ]; then
+      error "This operator cannot operate on pointers."
+    fi
+    echo "int" > ty
+    ;;
+  "factor ID")
+    read -a array < 0/node
+    name="${array[1]}"
+    symTableLookup $curProc $name
+    if [ "$reslType" = "notfound" ]; then
+      error "Undefined variable $name"
+    fi
+    read -a array <<< $reslType
+    reslType="${array[2]}"
+    echo "$reslType" > ty
+    ;;
+  "factor NUM")
+    echo "int" > ty
+    ;;
+  "factor NULL")
+    echo "intp" > ty
+    ;;
+  "factor LPAREN expr RPAREN")
+    typeCheck 1
+    cp 1/ty ty
+    ;;
+  "factor AMP lvalue")
+    typeCheck 1
+    ty=$(cat 1/ty)
+    if [ "$ty" != "int" ]; then
+      error "Cannot reference a non-int."
+    fi
+    echo "intp" > ty
+    ;;
+  "factor STAR factor")
+    typeCheck 1
+    ty=$(cat 1/ty)
+    if [ "$ty" != "intp" ]; then
+      error "Cannot dereference a non-int pointer."
+    fi
+    echo "int" > ty
+    ;;
+  "factor NEW INT LBRACK expr RBRACK")
+    typeCheck 3
+    ty=$(cat 3/ty)
+    if [ "$ty" != "int" ]; then
+      error "Cannot index a new expression with a non-int."
+    fi
+    echo "intp" > ty
+    ;;
+  "factor ID LPAREN RPAREN")
+    read -a array < 0/node
+    name="PROC${array[1]}"
+    procTableLookup $name
+    if [ "$reslProc" != "$name " ]; then
+      error "Could not find matching signature for procedure ${array[1]}."
+    fi
+    echo "int" > ty
+    ;;
+  "factor ID LPAREN arglist RPAREN")
+    count=0
+    read -a array < 0/node
+    name="PROC${array[1]}"
+    procTableLookup $name
+    ans=""
+    for word in $name; do
+      if [ $count -eq 0 ]; then
+        count=1
+      else
+        ans="$ans $word"
+      fi
+    done
+    echo "$ans" > 2/.argtmp
+    typeCheck 2
+    echo "int" > ty
+    ;;
+  "arglist expr")
+    typeCheck 0
+    ty=$(cat 2/ty)
+    read -a array < .argtmp
+    if [ "${array[0]}" != "$ty" ]; then
+      error "Incorrect arguments supplied for procedure."
+    fi
+    rm .argtmp
+    ;;
+  "arglist expr COMMA arglist")
+    typeCheck 0
+    ty=$(cat 2/ty)
+    read -a array < .argtmp
+    if [ "${array[0]}" != "$ty" ]; then
+      error "Incorrect arguments supplied for procedure."
+    fi
+    touch 2/.argtmp
+    words=$(cat .argtmp)
+    count=0
+    for word in $words; do
+      if [ count -eq 0 ]; then
+        count=1
+      else
+        echo $word >> 2/.argtmp
+      fi
+    done
+    rm .argtmp
+    typeCheck 2
+    ;;
+  "lvalue ID")
+    read -a array < 0/node
+    name="${array[1]}"
+    symTableLookup $curProc $name
+    if [ "$reslType" = "notfound" ]; then
+      error "Undefined variable $name"
+    fi
+    read -a array <<< $reslType
+    reslType="${array[2]}"
+    echo "$reslType" > ty
+    ;;
+  "lvalue STAR factor")
+    typeCheck 1
+    ty=$(cat 1/ty)
+    if [ "$ty" != "intp" ]; then
+      error "Cannot dereference a non-int pointer."
+    fi
+    echo "int" > ty
+    ;;
+  "lvalue LPAREN lvalue RPAREN")
+    typeCheck 1
+    cp 1/ty ty
+    ;;
+  esac
+  cd ..
+}
+
+procTbl="$PWD/.procTable"
+if [ -e "$procTbl" ]; then
+  rm "$procTbl"
+fi
+touch "$procTbl"
+reslType=""
+reslProc=""
+curProc=""
+typeCheck tree

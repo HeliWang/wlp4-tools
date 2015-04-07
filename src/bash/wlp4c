@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#########################################
+#                                       #
+# wlp4c - A wlp4 compiler               #
+# Input - a .wlp4 file                  #
+# Output - a .asm file                  #
+#                                       #
+# Copyright Sean Harrap (April 1, 2015) #
+#                                       #
+#########################################
+
+if [ $# -ne 1 ]; then
+  echo "Usage: wlp4c <input-file.wlp4>" >&2
+  exit 1
+fi
+
+./wlp4scan $1
+./wlp4parse ${1%wlp4}scanned
+./wlp4gen $1i

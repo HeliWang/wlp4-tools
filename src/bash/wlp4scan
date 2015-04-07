@@ -1,0 +1,266 @@
+#!/bin/bash
+
+###########################################################
+#                                                         #
+# wlp4scan - A wlp4 scanner                               #
+# Input - a .wlp4 file                                    #
+# Output - A .scanned file containing the tokens scanned. #
+#                                                         #
+# Copyright Sean Harrap (April 1, 2015)                   #
+#                                                         #
+###########################################################
+
+if [ $# -ne 1 ]; then
+  echo 'Usage: wlp4scan <input-file.wlp4>' >&2
+  exit 1
+fi
+
+output() {
+  echo "$@" >> "$target"
+}
+
+error() {
+  echo "ERROR: $@" >&2
+  exit 1
+}
+
+silentGrep() {
+  grep -E "$1" <<< "$2" > /dev/null 2> /dev/null
+  return $?
+}
+
+separators-state() {
+  case $1 in
+  '{')
+    output 'LBRACE {'
+    ;;
+  '}')
+    output 'RBRACE }'
+    ;;
+  '[')
+    output 'LBRACK ['
+    ;;
+  ']')
+    output 'RBRACK ]'
+    ;;
+  '(')
+    output 'LPAREN ('
+    ;;
+  ')')
+    output 'RPAREN )'
+    ;;
+  ',')
+    output 'COMMA ,'
+    ;;
+  ';')
+    output 'SEMI ;'
+    ;;
+  esac
+  nextState='begin-state'
+}
+
+second-equals-state() {
+  case $1 in
+  '=')
+   case $lasteq in
+   '!')
+     output 'NE !='
+     ;;
+   '>')
+     output 'GE >='
+     ;;
+   '<')
+     output 'LE <='
+     ;;
+   '=')
+     output 'EQ =='
+     ;;
+   esac
+   ;;
+  *)
+   case $lasteq in
+   '!')
+     error 'No operator !'
+     ;;
+   '>')
+     output 'GT >'
+     ;;
+   '<')
+     output 'LT <'
+     ;;
+   '=')
+     output 'BECOMES ='
+     ;;
+   esac
+   used=0
+   ;;
+  esac
+  nextState='begin-state'
+}
+
+equals-state() {
+  lasteq='$1'
+  nextState='second-equals-state'
+}
+
+operators-state() {
+  case $1 in
+  '+')
+    output 'PLUS +'
+    ;;
+  '-')
+    output 'MINUS -'
+    ;;
+  '*')
+    output 'STAR *'
+    ;;
+  '&')
+    output 'SLASH /'
+    ;;
+  '%')
+    output 'PCT %'
+    ;;
+  esac
+  nextState='begin-state'
+}
+
+second-comment-state() {
+  if [ "$1" = "newline" ]; then
+    nextState='begin-state'
+  else
+    nextState='second-comment-state'
+  fi
+}
+
+comment-state() {
+  if [ "$1" = '/' ]; then
+    nextState='second-comment-state'
+  else
+    output 'SLASH /'
+    used=0
+    nextState='begin-state'
+  fi
+}
+
+number-state() {
+  if silentGrep "^[a-zA-Z]$" $1; then
+    error "Alphabetic char in a number."
+  fi
+  silentGrep "^[0-9]$" $1
+  if [ $resl -eq 0 ]; then
+    numacc="$numacc$1"
+    nextState='number-state'
+  else
+    output "NUM $numacc"
+    used=0
+    nextState='begin-state'
+  fi
+}
+
+zero-state() {
+  if silentGrep "^[a-zA-Z]$" $1; then
+    error "Alphabetic char in a number."
+  fi
+  if silentGrep "^[0-9]$" $1; then
+    error "Zero-padded number."
+  fi
+  output 'NUM 0'
+  used=0
+  nextState='begin-state'
+}
+
+identifier-state() {
+  if silentGrep "^[a-zA-Z0-9]$" $1; then
+    idacc="$idacc$1"
+    nextState='identifier-state'
+  else
+    case $idacc in
+    "if")
+      output 'IF if'
+      ;;
+    "while")
+      output 'WHILE while'
+      ;;
+    "NULL")
+      output 'NULL NULL'
+      ;;
+    "wain")
+      output 'WAIN wain'
+      ;;
+    "new")
+      output 'NEW new'
+      ;;
+    "delete")
+      output 'DELETE delete'
+      ;;
+    "int")
+      output 'INT int'
+      ;;
+    "else")
+      output 'ELSE else'
+      ;;
+    "println")
+      output 'PRINTLN println'
+      ;;
+    "return")
+      output 'RETURN return'
+      ;;
+    *)
+      output "ID $idacc"
+    esac
+    used=0
+    nextState='begin-state'
+  fi
+}
+
+begin-state() {
+  if silentGrep '^[a-zA-Z]$' $1; then
+    idacc="$1"
+    nextState='identifier-state'
+  elif silentGrep '^[1-9]$' $1; then
+    numacc="$1"
+    nextState='number-state'
+  elif [ "$1" = "0" ]; then
+    nextState='zero-state'
+  elif silentGrep '^[a-zA-Z]+$' $1; then
+    nextState='begin-state'
+  elif silentGrep '^[+*&%-]$' $1; then
+    operators-state $1
+  elif silentGrep '^([{}()[,;]|])$' $1; then
+    separators-state $1
+  elif silentGrep '^[=><!]$' $1; then
+    equals-state $1
+  elif [ "$1" = "/" ]; then
+    nextState='comment-state'
+  else
+    error "Unrecognized input character $1."
+  fi
+}
+
+call-state() {
+  used=1
+  $nextState $1
+  if [ $used -eq 0 ]; then
+    call-state $1
+  fi
+}
+
+target="$PWD/${1%wlp4}scanned"
+
+if [ -e "$target" ]; then
+  rm "$target"
+fi
+touch "$target"
+
+used=1
+nextState='begin-state'
+
+while read line; do
+  for word in $line; do
+    for char in $(grep -o . <<< "$word"); do
+      call-state $char
+    done
+    call-state "whitespace"
+  done
+  call-state "newline"
+done < $1
