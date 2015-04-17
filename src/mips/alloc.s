@@ -40,7 +40,7 @@ init:		sw $1, -4($30)
 		;Set up the freelist:
 		;Size: Size of heap
 		;Next: NULL
-		lw $3
+		lis $3
 		.word heapSize
 		sw $3, 0($1)
 		sw $0, 4($1)
